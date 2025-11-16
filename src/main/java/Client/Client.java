@@ -105,62 +105,67 @@ public class Client {
     }
 
     // Llamada entrante individual
+    // Llamada entrante individual - VERSIÓN SIMPLIFICADA
     private static void manejarLlamadaEntrante(DataInputStream dataIn, PrintWriter out) {
         try {
             String emisor = dataIn.readUTF();
             String ip = dataIn.readUTF();
-            int puertoRecepcion = dataIn.readInt(); // Yo RECIBO aquí
-            int puertoEnvio = dataIn.readInt();     // Yo ENVÍO por aquí
+            int puertoRecepcion = dataIn.readInt();
+            int puertoEnvio = dataIn.readInt();
 
             System.out.println("\n📞 LLAMADA ENTRANTE de " + emisor);
-            System.out.println("   IP Remitente: " + ip);
-            System.out.println("   Yo RECIBO en puerto: " + puertoRecepcion);
-            System.out.println("   Yo ENVÍO a puerto: " + puertoEnvio);
-            
             System.out.println("¿Aceptar llamada? (S/N):");
             
             String respuesta;
             synchronized (enterLock) {
                 Scanner tempScanner = new Scanner(System.in);
-                respuesta = tempScanner.nextLine().trim();
+                respuesta = tempScanner.nextLine().trim().toUpperCase();
             }
 
-            if (respuesta.equalsIgnoreCase("S")) {
-                System.out.println("✅ Aceptando llamada...");
+            if (respuesta.equals("S")) {
+                System.out.println("✅ Llamada aceptada - Conectando...");
                 
-                // ✅ CORRECCIÓN: Configurar primero
+                // Configuración simple
                 AudioCallSender.prepararNuevaLlamada();
                 AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
 
-                // Iniciar recepción PRIMERO (más importante)
-                System.out.println("🎧 Iniciando RECEPCIÓN en puerto: " + puertoRecepcion);
+                // Iniciar componentes
                 AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
-
-                // Esperar a que la recepción esté lista
-                Thread.sleep(2000);
-                
-                // Luego iniciar envío
-                System.out.println("🎤 Iniciando ENVÍO a puerto: " + puertoEnvio);
+                Thread.sleep(1000);
                 AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
 
-                // Diagnóstico
-                Thread.sleep(1000);
-                System.out.println("\n🔍 DIAGNÓSTICO:");
-                AudioCallSender.diagnostico();
-                AudioCallReceiver.diagnostico();
-                
                 llamadaActiva = true;
                 out.println("CALL_ACCEPTED");
-                System.out.println("💚 Llamada con " + emisor + " ACTIVA - Escribe '10' para terminar");
+                System.out.println("💚 Llamada en curso - Escribe '10' para terminar");
                 
             } else {
-                System.out.println("❌ Llamada rechazada.");
+                System.out.println("❌ Llamada rechazada");
                 out.println("CALL_REJECTED");
             }
             
         } catch (Exception e) {
-            System.err.println("❌ Error al manejar llamada entrante: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Error al manejar llamada: " + e.getMessage());
+        }
+    }
+
+    // Configuración de llamada individual - VERSIÓN SIMPLIFICADA
+    private static void manejarConfiguracionLlamada(String lineaRecibida, BufferedReader in) {
+        try {
+            String ip = lineaRecibida.split(":")[1];
+            int puertoEnvio = Integer.parseInt(in.readLine().split(":")[1]);
+            int puertoRecepcion = Integer.parseInt(in.readLine().split(":")[1]);
+
+            System.out.println("✅ Llamada conectada - Iniciando...");
+            
+            // Iniciar llamada directamente
+            AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
+            AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
+            
+            llamadaActiva = true;
+            System.out.println("💚 Llamada en curso - Escribe '10' para terminar");
+            
+        } catch (Exception e) {
+            System.err.println("Error en configuración: " + e.getMessage());
         }
     }
     // Llamada grupal entrante
@@ -207,37 +212,6 @@ public class Client {
         } catch (Exception e) {
             System.err.println("Error al manejar llamada grupal entrante: " + e.getMessage());
             e.printStackTrace();
-        }
-    }
-
-    // Configuracion de llamada individual
-    private static void manejarConfiguracionLlamada(String lineaRecibida, BufferedReader in) {
-        try {
-            String ip = lineaRecibida.split(":")[1];
-            int puertoEnvio = Integer.parseInt(in.readLine().split(":")[1]);
-            int puertoRecepcion = Integer.parseInt(in.readLine().split(":")[1]);
-
-            System.out.println("\n=== CONFIGURANDO LLAMADA INDIVIDUAL ===");
-            System.out.println("IP Destino: " + ip);
-            System.out.println("Yo ENVÍO a puerto: " + puertoEnvio);
-            System.out.println("Yo RECIBO en puerto: " + puertoRecepcion);
-            // ✅ USO SIMPLIFICADO
-            AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
-            
-            // Iniciar recepción
-            AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
-            
-
-            Thread.sleep(1000);
-            System.out.println("\n🔍 DIAGNÓSTICO INMEDIATO:");
-            AudioCallSender.diagnostico();
-            AudioCallReceiver.diagnostico();
-            
-            llamadaActiva = true;
-            System.out.println("*** Llamada individual activa ***");
-            
-        } catch (Exception e) {
-            System.err.println("Error en configuración de llamada: " + e.getMessage());
         }
     }
 

@@ -66,6 +66,7 @@ public class AudioCallSender {
     public static void iniciarLlamadaIndividual(String ipDestino, int puertoDestino) {
         prepararNuevaLlamada();
         agregarDestinoLlamada(ipDestino, puertoDestino);
+        System.out.println("🔊 Iniciando llamada...");
         iniciarLlamada("INDIVIDUAL", "");
     }
 

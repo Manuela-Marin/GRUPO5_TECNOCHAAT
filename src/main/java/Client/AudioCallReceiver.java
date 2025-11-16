@@ -29,6 +29,7 @@ public class AudioCallReceiver {
      * Inicia recepción para llamada individual
      */
     public static void iniciarRecepcionIndividual(int puertoEscucha) {
+        System.out.println("🔊 Preparando recepción...");
         iniciarRecepcion(puertoEscucha, "INDIVIDUAL", "");
     }
 
