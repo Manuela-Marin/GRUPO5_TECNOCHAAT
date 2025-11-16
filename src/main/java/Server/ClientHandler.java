@@ -338,26 +338,27 @@ public class ClientHandler implements Runnable {
             
             // CORRECCIÓN: Usar puertos más altos y mejor separados
             int puertoBase = 30000 + new Random().nextInt(1000); // Más alto
-            int puertoEnvio = puertoBase;
-            int puertoRecepcion = puertoBase + 500; // Mejor separación
+            int puertoEnvioLlamante = puertoBase;           // Llamante ENVÍA por este puerto
+            int puertoRecepcionLlamante = puertoBase + 500; // Llamante RECIBE por este puerto
+            int puertoEnvioReceptor = puertoBase + 500;     // Receptor ENVÍA por este puerto  
+            int puertoRecepcionReceptor = puertoBase;       // Receptor RECIBE por este puerto
+
 
             System.out.println("Configurando llamada individual:");
             System.out.println("   De: " + clientName + " (" + ipLlamante + ")");
             System.out.println("   Para: " + destinatario + " (" + ipReceptor + ")");
-            System.out.println("   Puerto envio: " + puertoEnvio);
-            System.out.println("   Puerto recepcion: " + puertoRecepcion);
-
+            System.out.println("   Llamante envía: " + puertoEnvioLlamante + " → recibe: " + puertoRecepcionLlamante);
+            System.out.println("   Receptor envía: " + puertoEnvioReceptor + " → recibe: " + puertoRecepcionReceptor);
             // CORRECCIÓN: Informar al llamante primero
             out.println("IP_DESTINO:" + ipReceptor);
-            out.println("PUERTO_ENVIO:" + puertoEnvio);
-            out.println("PUERTO_RECEPCION:" + puertoRecepcion);
-
+            out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);     // Él envía por este
+            out.println("PUERTO_RECEPCION:" + puertoRecepcionLlamante); // Él recibe por este
             // Luego notificar al receptor
             receptor.out.println("LLAMADA_INCOMING");
             receptor.dataOut.writeUTF(this.clientName);
             receptor.dataOut.writeUTF(ipLlamante);
-            receptor.dataOut.writeInt(puertoRecepcion);
-            receptor.dataOut.writeInt(puertoEnvio);
+            receptor.dataOut.writeInt(puertoRecepcionReceptor);
+            receptor.dataOut.writeInt(puertoEnvioReceptor);
             receptor.dataOut.flush();
 
             System.out.println("Llamada individual configurada correctamente");

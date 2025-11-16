@@ -139,7 +139,9 @@ private static void ejecutarEnvioAudio() {
             byte[] buffer = new byte[BUFFER_SIZE];
             inicioEnvio = System.currentTimeMillis();
 
-            System.out.println("🚀 Envío de audio iniciado - Habla ahora");
+            System.out.println("🚀 ENVÍO INICIADO - Puerto destino: " + 
+                          (destinos.isEmpty() ? "N/A" : destinos.get(0).puerto));
+
             System.out.println("💡 Escribe '10' en el menú para terminar");
 
             // Bucle principal de envío
@@ -149,6 +151,9 @@ private static void ejecutarEnvioAudio() {
                     
                     if (bytesLeidos > 0) {
                         // Enviar a todos los destinos
+                        if (paquetesEnviados == 0) {
+                            System.out.println("🎤 PRIMER PAQUETE ENVIADO! - " + bytesLeidos + " bytes");
+                        }
                         for (Destino destino : destinos) {
                             try {
                                 DatagramPacket paquete = new DatagramPacket(
@@ -166,6 +171,9 @@ private static void ejecutarEnvioAudio() {
                         
                         paquetesEnviados++;
                         bytesEnviados += bytesLeidos;
+                        if (paquetesEnviados % 10 == 0) {
+                            System.out.printf("📤 Paquetes enviados: %d\r", paquetesEnviados);
+                        }
                     }
                     
                 } catch (Exception e) {

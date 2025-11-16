@@ -114,19 +114,29 @@ public class Client {
 
             System.out.println("\n=== LLAMADA ENTRANTE de " + emisor + " ===");
             
+            System.out.println("IP Remitente: " + ip);
+            System.out.println("Yo RECIBO en puerto: " + puertoRecepcion);
+            System.out.println("Yo ENVÍO a puerto: " + puertoEnvio);
+
             // ✅ USO SIMPLIFICADO
             AudioCallSender.prepararNuevaLlamada();
             AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
 
             // Iniciar recepción PRIMERO
+            System.out.println("🟡 Iniciando RECEPCIÓN en puerto: " + puertoRecepcion);
             AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
 
             // Esperar un poco antes de iniciar envío
-            Thread.sleep(1000);
+            Thread.sleep(2000);
+            System.out.println("🟡 Iniciando ENVÍO a puerto: " + puertoEnvio);
 
             // Luego iniciar envío
             AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
 
+            Thread.sleep(1000);
+            System.out.println("\n🔍 DIAGNÓSTICO INMEDIATO:");
+            AudioCallSender.diagnostico();
+            AudioCallReceiver.diagnostico();
             llamadaActiva = true;
             out.println("CALL_ACCEPTED");
             System.out.println("*** Llamada con " + emisor + " activa ***");
@@ -189,6 +199,10 @@ public class Client {
             int puertoEnvio = Integer.parseInt(in.readLine().split(":")[1]);
             int puertoRecepcion = Integer.parseInt(in.readLine().split(":")[1]);
 
+            System.out.println("\n=== CONFIGURANDO LLAMADA INDIVIDUAL ===");
+            System.out.println("IP Destino: " + ip);
+            System.out.println("Yo ENVÍO a puerto: " + puertoEnvio);
+            System.out.println("Yo RECIBO en puerto: " + puertoRecepcion);
             // ✅ USO SIMPLIFICADO
             AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
             
@@ -196,6 +210,11 @@ public class Client {
             AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
             
 
+            Thread.sleep(1000);
+            System.out.println("\n🔍 DIAGNÓSTICO INMEDIATO:");
+            AudioCallSender.diagnostico();
+            AudioCallReceiver.diagnostico();
+            
             llamadaActiva = true;
             System.out.println("*** Llamada individual activa ***");
             

@@ -107,13 +107,14 @@ public class AudioCallReceiver {
             System.out.println("   Buffer Size: " + BUFFER_SIZE + " bytes");
 
             // Configurar socket de recepción
+            System.out.println("🔊 Creando socket en puerto: " + puertoEscucha);
             socket = new DatagramSocket(puertoEscucha);
             socket.setSoTimeout(2000); // Timeout para verificar estado
 
             byte[] buffer = new byte[BUFFER_SIZE];
             inicioRecepcion = System.currentTimeMillis();
 
-            System.out.println("👂 Escuchando audio entrante...");
+            System.out.println("👂 ESCUCHANDO en puerto " + puertoEscucha + " - Esperando paquetes...");
             System.out.println("💡 Escribe '10' en el menú para terminar");
 
             // Bucle principal de recepción
@@ -124,33 +125,38 @@ public class AudioCallReceiver {
                     
                     if (paquete.getLength() > 0) {
                         // ✅ CORRECCIÓN: Reproducir inmediatamente sin validaciones complejas
+                        if (paquetesRecibidos == 0) {
+                            System.out.println("🎉 PRIMER PAQUETE RECIBIDO! - " + paquete.getLength() + " bytes");
+                            System.out.println("   Desde: " + paquete.getAddress() + ":" + paquete.getPort());
+                        }
                         altavoz.write(paquete.getData(), 0, paquete.getLength());
                         paquetesRecibidos++;
                         bytesRecibidos += paquete.getLength();
                         
                         // Mostrar progreso cada 100 paquetes
-                        if (paquetesRecibidos % 100 == 0) {
+                        if (paquetesRecibidos % 10 == 0) {
                             System.out.printf("📥 Recibidos: %d paquetes\r", paquetesRecibidos);
                         }
                     }
                     
                 } catch (java.net.SocketTimeoutException e) {
                     // Timeout normal - verificar si debemos continuar
+                    if (paquetesRecibidos == 0) {
+                        System.out.printf("⏳ Esperando audio... (timeout %d)\r", System.currentTimeMillis() % 10);
+                    }
                     if (!recibiendo) break;
                 } catch (Exception e) {
                     if (recibiendo) {
                         System.err.println("⚠️  Error en recepción: " + e.getMessage());
-                        try { Thread.sleep(100); } catch (InterruptedException ie) {}
                     }
                 }
             }
 
         } catch (LineUnavailableException e) {
             System.err.println("❌ Altavoz no disponible: " + e.getMessage());
-            System.err.println("   Verifica que los altavoces estén conectados");
         } catch (SocketException e) {
             if (recibiendo) {
-                System.err.println("❌ Error de socket: " + e.getMessage());
+                System.err.println("❌ Error de socketen puerto " + puertoEscucha + ": " + e.getMessage());
             }
         } catch (Exception e) {
             System.err.println("💥 ERROR en AudioCallReceiver: " + e.getMessage());
