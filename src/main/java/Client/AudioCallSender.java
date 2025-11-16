@@ -341,16 +341,16 @@ private static void ejecutarEnvioAudio() {
     private static void cerrarRecursos() {
         try {
             if (microfono != null) {
-                try {
                 microfono.stop();
                 microfono.close();
-            }catch (Exception e) {
-            System.err.println("⚠️  Error cerrando micrófono: " + e.getMessage());
-        }
-        microfono = null;
-    }
+                microfono = null;
+                System.out.println("🔇 Micrófono cerrado");
+            }
         } catch (Exception e) {
-            System.err.println("⚠️  Error cerrando micrófono: " + e.getMessage());
+            // Ignorar errores de cierre si el micrófono es null
+            if (microfono != null) {
+                System.err.println("⚠️  Error cerrando micrófono: " + e.getMessage());
+            }
         }
 
         try {

@@ -329,35 +329,38 @@ public class ClientHandler implements Runnable {
             String ipReceptor = receptor.clientSocket.getInetAddress().getHostAddress();
             String ipLlamante = this.clientSocket.getInetAddress().getHostAddress();
 
-            // ✅ CORRECCIÓN: PUERTOS SIMÉTRICOS Y CORRECTOS
-            int puertoBase = 30000 + new Random().nextInt(1000);
+            // ✅ CORRECCIÓN: PUERTOS ÚNICOS Y BIEN SEPARADOS
+            int puertoBase = 30000 + new Random().nextInt(5000);
             
-            // Llamante: ENVÍA por puertoBase, RECIBE por puertoBase+500
+            // Llamante: ENVÍA por puertoBase, RECIBE por puertoBase+1
             int puertoEnvioLlamante = puertoBase;
-            int puertoRecepcionLlamante = puertoBase + 500;
+            int puertoRecepcionLlamante = puertoBase + 1;
             
-            // Receptor: ENVÍA por puertoBase+500, RECIBE por puertoBase  
-            int puertoEnvioReceptor = puertoBase + 500;
+            // Receptor: ENVÍA por puertoBase+1, RECIBE por puertoBase  
+            int puertoEnvioReceptor = puertoBase + 1;
             int puertoRecepcionReceptor = puertoBase;
 
-            System.out.println("🎯 CONFIGURACIÓN BIDIRECCIONAL:");
+            System.out.println("🎯 CONFIGURACIÓN BIDIRECCIONAL CORREGIDA:");
             System.out.println("   " + clientName + " ENVÍA → " + puertoEnvioLlamante + " | RECIBE ← " + puertoRecepcionLlamante);
             System.out.println("   " + destinatario + " ENVÍA → " + puertoEnvioReceptor + " | RECIBE ← " + puertoRecepcionReceptor);
 
-            // Informar al LLAMANTE
+            // ✅ CORRECCIÓN: Informar al LLAMANTE primero
             out.println("IP_DESTINO:" + ipReceptor);
-            out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);     // Él envía aquí
-            out.println("PUERTO_RECEPCION:" + puertoRecepcionLlamante); // Él recibe aquí
+            out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);
+            out.println("PUERTO_RECEPCION:" + puertoRecepcionLlamante);
 
-            // Informar al RECEPTOR  
+            // Esperar un momento antes de notificar al receptor
+            Thread.sleep(100);
+
+            // ✅ CORRECCIÓN: Informar al RECEPTOR  
             receptor.out.println("LLAMADA_INCOMING");
             receptor.dataOut.writeUTF(this.clientName);
             receptor.dataOut.writeUTF(ipLlamante);
-            receptor.dataOut.writeInt(puertoRecepcionReceptor); // Receptor recibe aquí
-            receptor.dataOut.writeInt(puertoEnvioReceptor);     // Receptor envía aquí
+            receptor.dataOut.writeInt(puertoRecepcionReceptor);
+            receptor.dataOut.writeInt(puertoEnvioReceptor);
             receptor.dataOut.flush();
 
-            System.out.println("✅ Llamada bidireccional configurada");
+            System.out.println("✅ Llamada bidireccional configurada correctamente");
 
         } catch (Exception e) {
             out.println("Error al iniciar la llamada.");
