@@ -331,41 +331,45 @@ public class ClientHandler implements Runnable {
         ClientHandler receptor = users.get(destinatario);
 
         try {
-            
             String ipReceptor = receptor.clientSocket.getInetAddress().getHostAddress();
             String ipLlamante = this.clientSocket.getInetAddress().getHostAddress();
 
+            // ✅ CORRECCIÓN: Puertos CORRECTAMENTE asignados
+            int puertoBase = 30000 + new Random().nextInt(1000);
             
-            // CORRECCIÓN: Usar puertos más altos y mejor separados
-            int puertoBase = 30000 + new Random().nextInt(1000); // Más alto
-            int puertoEnvioLlamante = puertoBase;           // Llamante ENVÍA por este puerto
-            int puertoRecepcionLlamante = puertoBase + 500; // Llamante RECIBE por este puerto
-            int puertoEnvioReceptor = puertoBase + 500;     // Receptor ENVÍA por este puerto  
-            int puertoRecepcionReceptor = puertoBase;       // Receptor RECIBE por este puerto
+            // Llamante ENVÍA al puerto que Receptor ESCUCHA
+            int puertoEnvioLlamante = puertoBase + 500;     // Llamante envía por este
+            int puertoRecepcionReceptor = puertoBase + 500; // Receptor recibe por este
+            
+            // Receptor ENVÍA al puerto que Llamante ESCUCHA  
+            int puertoEnvioReceptor = puertoBase;           // Receptor envía por este
+            int puertoRecepcionLlamante = puertoBase;       // Llamante recibe por este
 
+            System.out.println("🎯 CONFIGURACIÓN CORREGIDA DE LLAMADA:");
+            System.out.println("   Llamante: " + clientName + " (" + ipLlamante + ")");
+            System.out.println("   Receptor: " + destinatario + " (" + ipReceptor + ")");
+            System.out.println("   " + clientName + " ENVÍA → " + puertoEnvioLlamante + " | RECIBE ← " + puertoRecepcionLlamante);
+            System.out.println("   " + destinatario + " ENVÍA → " + puertoEnvioReceptor + " | RECIBE ← " + puertoRecepcionReceptor);
 
-            System.out.println("Configurando llamada individual:");
-            System.out.println("   De: " + clientName + " (" + ipLlamante + ")");
-            System.out.println("   Para: " + destinatario + " (" + ipReceptor + ")");
-            System.out.println("   Llamante envía: " + puertoEnvioLlamante + " → recibe: " + puertoRecepcionLlamante);
-            System.out.println("   Receptor envía: " + puertoEnvioReceptor + " → recibe: " + puertoRecepcionReceptor);
-            // CORRECCIÓN: Informar al llamante primero
+            // Informar al LLAMANTE
             out.println("IP_DESTINO:" + ipReceptor);
-            out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);     // Él envía por este
-            out.println("PUERTO_RECEPCION:" + puertoRecepcionLlamante); // Él recibe por este
-            // Luego notificar al receptor
+            out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);     // Él envía a este puerto
+            out.println("PUERTO_RECEPCION:" + puertoRecepcionLlamante); // Él recibe en este puerto
+
+            // Informar al RECEPTOR
             receptor.out.println("LLAMADA_INCOMING");
             receptor.dataOut.writeUTF(this.clientName);
             receptor.dataOut.writeUTF(ipLlamante);
-            receptor.dataOut.writeInt(puertoRecepcionReceptor);
-            receptor.dataOut.writeInt(puertoEnvioReceptor);
+            receptor.dataOut.writeInt(puertoRecepcionReceptor); // Receptor recibe aquí
+            receptor.dataOut.writeInt(puertoEnvioReceptor);     // Receptor envía por aquí
             receptor.dataOut.flush();
 
-            System.out.println("Llamada individual configurada correctamente");
+            System.out.println("✅ Llamada individual configurada CORRECTAMENTE");
 
         } catch (Exception e) {
             out.println("Error al iniciar la llamada individual: " + e.getMessage());
             System.err.println("Error en llamada individual: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

@@ -109,40 +109,58 @@ public class Client {
         try {
             String emisor = dataIn.readUTF();
             String ip = dataIn.readUTF();
-            int puertoRecepcion = dataIn.readInt();
-            int puertoEnvio = dataIn.readInt();
+            int puertoRecepcion = dataIn.readInt(); // Yo RECIBO aquí
+            int puertoEnvio = dataIn.readInt();     // Yo ENVÍO por aquí
 
-            System.out.println("\n=== LLAMADA ENTRANTE de " + emisor + " ===");
+            System.out.println("\n📞 LLAMADA ENTRANTE de " + emisor);
+            System.out.println("   IP Remitente: " + ip);
+            System.out.println("   Yo RECIBO en puerto: " + puertoRecepcion);
+            System.out.println("   Yo ENVÍO a puerto: " + puertoEnvio);
             
-            System.out.println("IP Remitente: " + ip);
-            System.out.println("Yo RECIBO en puerto: " + puertoRecepcion);
-            System.out.println("Yo ENVÍO a puerto: " + puertoEnvio);
+            System.out.println("¿Aceptar llamada? (S/N):");
+            
+            String respuesta;
+            synchronized (enterLock) {
+                Scanner tempScanner = new Scanner(System.in);
+                respuesta = tempScanner.nextLine().trim();
+            }
 
-            // ✅ USO SIMPLIFICADO
-            AudioCallSender.prepararNuevaLlamada();
-            AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
+            if (respuesta.equalsIgnoreCase("S")) {
+                System.out.println("✅ Aceptando llamada...");
+                
+                // ✅ CORRECCIÓN: Configurar primero
+                AudioCallSender.prepararNuevaLlamada();
+                AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
 
-            // Iniciar recepción PRIMERO
-            System.out.println("🟡 Iniciando RECEPCIÓN en puerto: " + puertoRecepcion);
-            AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
+                // Iniciar recepción PRIMERO (más importante)
+                System.out.println("🎧 Iniciando RECEPCIÓN en puerto: " + puertoRecepcion);
+                AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
 
-            // Esperar un poco antes de iniciar envío
-            Thread.sleep(2000);
-            System.out.println("🟡 Iniciando ENVÍO a puerto: " + puertoEnvio);
+                // Esperar a que la recepción esté lista
+                Thread.sleep(2000);
+                
+                // Luego iniciar envío
+                System.out.println("🎤 Iniciando ENVÍO a puerto: " + puertoEnvio);
+                AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
 
-            // Luego iniciar envío
-            AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
-
-            Thread.sleep(1000);
-            System.out.println("\n🔍 DIAGNÓSTICO INMEDIATO:");
-            AudioCallSender.diagnostico();
-            AudioCallReceiver.diagnostico();
-            llamadaActiva = true;
-            out.println("CALL_ACCEPTED");
-            System.out.println("*** Llamada con " + emisor + " activa ***");
+                // Diagnóstico
+                Thread.sleep(1000);
+                System.out.println("\n🔍 DIAGNÓSTICO:");
+                AudioCallSender.diagnostico();
+                AudioCallReceiver.diagnostico();
+                
+                llamadaActiva = true;
+                out.println("CALL_ACCEPTED");
+                System.out.println("💚 Llamada con " + emisor + " ACTIVA - Escribe '10' para terminar");
+                
+            } else {
+                System.out.println("❌ Llamada rechazada.");
+                out.println("CALL_REJECTED");
+            }
             
         } catch (Exception e) {
-            System.err.println("Error al manejar llamada entrante: " + e.getMessage());
+            System.err.println("❌ Error al manejar llamada entrante: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     // Llamada grupal entrante

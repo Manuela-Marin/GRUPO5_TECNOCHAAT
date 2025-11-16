@@ -123,6 +123,9 @@ private static void ejecutarEnvioAudio() {
                 }
             }
 
+            System.out.println("🔌 Creando socket de envío...");
+            socket = new DatagramSocket();
+            socket.setSoTimeout(1000);
             // Configurar micrófono
             microfono = (TargetDataLine) AudioSystem.getLine(info);
             microfono.open(formato);
@@ -132,9 +135,6 @@ private static void ejecutarEnvioAudio() {
             System.out.println("   Sample Rate: " + formato.getSampleRate() + " Hz");
             System.out.println("   Buffer Size: " + BUFFER_SIZE + " bytes");
 
-            // Configurar socket
-            socket = new DatagramSocket();
-            socket.setSoTimeout(1000);
 
             byte[] buffer = new byte[BUFFER_SIZE];
             inicioEnvio = System.currentTimeMillis();
