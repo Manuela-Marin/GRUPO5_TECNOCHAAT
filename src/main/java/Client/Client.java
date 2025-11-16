@@ -168,7 +168,7 @@ public class Client {
             System.err.println("Error en configuración: " + e.getMessage());
         }
     }
-    // Llamada grupal entrante
+    // Llamada grupal entrante - VERSIÓN CORREGIDA
     private static void manejarLlamadaGrupalEntrante(DataInputStream dataIn, PrintWriter out) {
         try {
             String emisor = dataIn.readUTF();
@@ -178,43 +178,41 @@ public class Client {
             int puertoEnvio = dataIn.readInt();
             String idLlamada = dataIn.readUTF();
 
-            System.out.println("\n=== LLAMADA GRUPAL ENTRANTE ===");
+            System.out.println("\n📞 LLAMADA GRUPAL ENTRANTE");
             System.out.println("De: " + emisor);
             System.out.println("Grupo: " + grupo);
-            System.out.println("ID Llamada: " + idLlamada);
-            System.out.println("Puerto recepcion: " + puertoRecepcion);
-            System.out.println("Puerto envio: " + puertoEnvio);
             System.out.println("Unirte a la llamada grupal? (S/N):");
             
             String respuesta;
             synchronized (enterLock) {
                 Scanner tempScanner = new Scanner(System.in);
-                respuesta = tempScanner.nextLine().trim();
+                respuesta = tempScanner.nextLine().trim().toUpperCase();
             }
 
-            if (respuesta.equalsIgnoreCase("S")) {
-                System.out.println("Uniendote a llamada grupal...");
+            if (respuesta.equals("S")) {
+                System.out.println("✅ Uniéndote a llamada grupal...");
 
-                new Thread(() -> AudioCallReceiver.iniciarRecepcion(puertoRecepcion, "GRUPAL", idLlamada)).start();
-                Thread.sleep(500);
-                new Thread(() -> {
-                    AudioCallSender.prepararNuevaLlamada();
-                    AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
-                    AudioCallSender.iniciarLlamadaGrupal(idLlamada);
-                }).start();
+                // ✅ CORRECCIÓN: Configurar correctamente para grupal
+                AudioCallSender.prepararNuevaLlamada();
+                AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
+
+                // Iniciar recepción y envío
+                AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
+                Thread.sleep(1000);
+                AudioCallSender.iniciarLlamadaGrupal(idLlamada);
+
                 llamadaActiva = true;
                 out.println("CALL_GRUPAL_ACCEPTED");
-                System.out.println("*** En llamada grupal - Escribe '10' para salir ***");
+                System.out.println("💚 En llamada grupal - Escribe '10' para salir");
             } else {
-                System.out.println("Llamada grupal rechazada.");
+                System.out.println("❌ Llamada grupal rechazada.");
                 out.println("CALL_GRUPAL_REJECTED");
             }
         } catch (Exception e) {
-            System.err.println("Error al manejar llamada grupal entrante: " + e.getMessage());
+            System.err.println("Error al manejar llamada grupal: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
    
     private static void manejarConfiguracionLlamadaGrupal(BufferedReader in) {
         try {
@@ -228,15 +226,13 @@ public class Client {
             int puertoEnvio = Integer.parseInt(puertoEnvioLine);
             int miembrosInvitados = Integer.parseInt(miembrosLine);
 
-            System.out.println("\n=== INICIANDO LLAMADA GRUPAL ===");
-            System.out.println("Miembros invitados: " + miembrosInvitados);
-            System.out.println("Puerto recepcion: " + puertoRecepcion);
-            System.out.println("Puerto envio: " + puertoEnvio);
-            System.out.println("ID Llamada: " + idLlamada);
+            System.out.println("✅ Iniciando llamada grupal...");
 
+            // ✅ CORRECCIÓN: Configurar todos los destinos
             AudioCallSender.prepararNuevaLlamada();
             AudioCallSender.agregarDestinoLlamada(ipCreador, puertoEnvio);
-            // Leer IPs de otros miembros
+            
+            // Leer y agregar IPs de otros miembros
             String linea;
             while (!(linea = in.readLine()).equals("END_IP_LIST")) {
                 if (linea.startsWith("IP_MIEMBRO:")) {
@@ -245,16 +241,16 @@ public class Client {
                 }
             }
 
-            // Iniciar envío SIN borrar destinos
-            new Thread(() -> AudioCallSender.iniciarLlamadaGrupal(idLlamada)).start();
+            // Iniciar llamada grupal
+            AudioCallSender.iniciarLlamadaGrupal(idLlamada);
             Thread.sleep(500);
-            new Thread(() -> AudioCallReceiver.iniciarRecepcion(puertoRecepcion, "GRUPAL", idLlamada)).start();
+            AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
 
             llamadaActiva = true;
-            System.out.println("*** Llamada grupal activa - Escribe '10' para salir ***");
+            System.out.println("💚 Llamada grupal activa - Escribe '10' para salir");
 
         } catch (Exception e) {
-            System.err.println("Error en configuracion de llamada grupal: " + e.getMessage());
+            System.err.println("Error en configuración de llamada grupal: " + e.getMessage());
             e.printStackTrace();
         }
     }

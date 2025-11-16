@@ -341,11 +341,14 @@ private static void ejecutarEnvioAudio() {
     private static void cerrarRecursos() {
         try {
             if (microfono != null) {
+                try {
                 microfono.stop();
                 microfono.close();
-                microfono = null;
-                System.out.println("🔇 Micrófono cerrado");
-            }
+            }catch (Exception e) {
+            System.err.println("⚠️  Error cerrando micrófono: " + e.getMessage());
+        }
+        microfono = null;
+    }
         } catch (Exception e) {
             System.err.println("⚠️  Error cerrando micrófono: " + e.getMessage());
         }
@@ -359,6 +362,7 @@ private static void ejecutarEnvioAudio() {
         } catch (Exception e) {
             System.err.println("⚠️  Error cerrando socket: " + e.getMessage());
         }
+        enviando = false;
     }
 
     private static double calcularNivelAudio(byte[] audioData, int length) {
