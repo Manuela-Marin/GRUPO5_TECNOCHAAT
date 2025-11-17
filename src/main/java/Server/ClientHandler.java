@@ -236,9 +236,12 @@ public class ClientHandler implements Runnable {
             // ✅✅✅ CORRECCIÓN CRÍTICA: Configurar comunicación MESH
             // Cada miembro tendrá su propio par de puertos
             
-            // 1. PRIMERO configurar al CREADOR
-            int puertoEnvioCreador = puertoBase;
-            int puertoRecepcionCreador = puertoBase + 1000;
+            // CREADOR configuración
+            int puertoRecepcionCreador = puertoBase;        // Donde el CREADOR escucha
+            int puertoEnvioCreador = puertoBase + 1000;     // Donde el CREADOR envía (NO usado directamente)
+            System.out.println("🎯 CONFIGURACIÓN CREADOR:");
+            System.out.println("   Creador escucha en: " + puertoRecepcionCreador);
+            System.out.println("   Creador envía desde: " + puertoEnvioCreador);
             
             this.out.println("CONFIG_LLAMADA_GRUPAL");
             this.out.println("IP_CREADOR:" + this.clientSocket.getInetAddress().getHostAddress());
@@ -253,8 +256,8 @@ public class ClientHandler implements Runnable {
             
             for (ClientHandler miembro : miembros) {
                 if (!miembro.clientName.equals(this.clientName)) {
-                    int puertoEnvioMiembro = puertoBase + (contadorPuerto * 100);
-                    int puertoRecepcionMiembro = puertoEnvioMiembro + 50;
+                    int puertoRecepcionMiembro = puertoBase + (contadorPuerto * 100);  // Donde el MIEMBRO escucha
+                    int puertoEnvioMiembro = puertoRecepcionCreador;                   // Donde el MIEMBRO envía (al puerto del creador)
                     puertosMiembros.put(miembro, puertoEnvioMiembro);
                     
                     // Informar al creador sobre este miembro
