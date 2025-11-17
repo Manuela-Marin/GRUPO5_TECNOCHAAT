@@ -384,4 +384,28 @@ private static void ejecutarEnvioAudio() {
         double promedio = (double) suma / (length / 2);
         return Math.min(promedio / Short.MAX_VALUE, 1.0);
     }
+
+    /**
+ * ✅ NUEVO: Método de diagnóstico para llamadas grupales
+ */
+    public static void diagnosticoGrupal() {
+        System.out.println("\n🔍 DIAGNÓSTICO LLAMADA GRUPAL:");
+        System.out.println("   Estado: " + (enviando ? "🟢 ENVIANDO" : "🔴 DETENIDO"));
+        System.out.println("   Tipo: " + tipoLlamada);
+        System.out.println("   ID: " + (idLlamada.isEmpty() ? "N/A" : idLlamada));
+        System.out.println("   Destinos configurados: " + destinos.size());
+        
+        if (destinos.isEmpty()) {
+            System.out.println("   ❌ ERROR: No hay destinos configurados");
+        } else {
+            System.out.println("   ✅ Destinos activos:");
+            for (Destino destino : destinos) {
+                System.out.println("      - " + destino + " (" + destino.paquetesEnviados + " paquetes)");
+            }
+        }
+        
+        System.out.println("   Socket: " + (socket != null ? "🟢 CONECTADO" : "🔴 DESCONECTADO"));
+        System.out.println("   Micrófono: " + (microfono != null ? "🟢 ABIERTO" : "🔴 CERRADO"));
+        System.out.println("   Paquetes totales: " + paquetesEnviados);
+    }
 }
