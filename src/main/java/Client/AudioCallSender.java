@@ -72,9 +72,16 @@ public class AudioCallSender {
 
     public static void iniciarLlamadaGrupal(String idLlamadaGrupal) {
         if (destinos.isEmpty()) {
-            System.err.println("❌ No hay destinos configurados para la llamada grupal");
+            System.err.println("❌ Error: No hay destinos configurados para la llamada grupal");
+            System.out.println("   Destinos actuales: " + destinos.size());
             return;
         }
+        
+        System.out.println("🚀 INICIANDO LLAMADA GRUPAL con " + destinos.size() + " destinos:");
+        for (Destino destino : destinos) {
+            System.out.println("   📍 " + destino);
+        }
+        
         iniciarLlamada("GRUPAL", idLlamadaGrupal);
     }
 
