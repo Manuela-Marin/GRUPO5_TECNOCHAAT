@@ -294,16 +294,11 @@ public class Client {
             while (!(linea = in.readLine()).equals("END_IP_LIST")) {
                 if (linea.startsWith("IP_MIEMBRO:")) {
                     String ipMiembro = linea.split(":")[1];
-                    String puertoLine = in.readLine();
                     
-                    if (puertoLine != null && puertoLine.startsWith("PUERTO_ENVIO_MIEMBRO:")) {
-                        int puertoEnvioMiembro = Integer.parseInt(puertoLine.split(":")[1]);
-                        
-                        // ✅ CORRECCIÓN: El creador envía donde los miembros escuchan
-                        AudioCallSender.agregarDestinoLlamada(ipMiembro, puertoEnvioMiembro);
-                        destinosInfo.add(ipMiembro + ":" + puertoEnvioMiembro);
-                        System.out.println("   ✅ Agregado destino: " + ipMiembro + ":" + puertoEnvioMiembro);
-                    }
+                    // ✅ CORRECCIÓN: El creador envía donde los miembros escuchan
+                    AudioCallSender.agregarDestinoLlamada(ipMiembro, puertoEnvioCreador);
+                    destinosInfo.add(ipMiembro + ":" + puertoEnvioCreador);
+                    System.out.println("   ✅ Agregado destino: " + ipMiembro + ":" + puertoEnvioCreador);
                 }
             }
 
@@ -314,14 +309,11 @@ public class Client {
                 return;
             }
 
-            // ✅ CORRECCIÓN: Usar variable final para el thread
-            final int totalDestinosFinal = destinosInfo.size();
-
             // ✅ CORRECCIÓN: Iniciar llamada grupal con delays adecuados
             new Thread(() -> {
                 try {
                     System.out.println("🎤 INICIANDO ENVÍO GRUPAL como CREADOR");
-                    System.out.println("   Destinos: " + totalDestinosFinal);
+                    System.out.println("   Destinos: " + destinosInfo.size());
                     
                     // Esperar a que los miembros configuren sus receptores
                     Thread.sleep(4000);

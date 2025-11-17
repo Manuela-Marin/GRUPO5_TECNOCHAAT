@@ -246,9 +246,24 @@ public class ClientHandler implements Runnable {
             System.out.println("     - Escuchan en: " + puertoRecepcionMiembros + " (creador ENVÍA aquí)");
             System.out.println("     - Envían a: " + puertoRecepcionCreador + " (creador ESCUCHA aquí)");
 
+            // ✅✅✅ CORRECCIÓN CRÍTICA: OBTENER IP REAL DEL CREADOR
+            String ipCreador = this.clientSocket.getInetAddress().getHostAddress();
+            
+            // Si el creador está en localhost, intentar obtener IP real
+            if (ipCreador.equals("127.0.0.1") || ipCreador.equals("localhost")) {
+                try {
+                    Socket testSocket = new Socket("8.8.8.8", 53);
+                    ipCreador = testSocket.getLocalAddress().getHostAddress();
+                    testSocket.close();
+                    System.out.println("   ✅ IP real del creador detectada: " + ipCreador);
+                } catch (Exception e) {
+                    System.out.println("   ⚠️  No se pudo detectar IP real del creador, usando: " + ipCreador);
+                }
+            }
+
             // ✅ CORRECCIÓN: Configurar CREADOR primero
             this.out.println("CONFIG_LLAMADA_GRUPAL");
-            this.out.println("IP_CREADOR:" + this.clientSocket.getInetAddress().getHostAddress());
+            this.out.println("IP_CREADOR:" + ipCreador);  // ✅ IP REAL del creador
             this.out.println("PUERTO_RECEPCION:" + puertoRecepcionCreador);    // Creador ESCUCHA aquí
             this.out.println("PUERTO_ENVIO:" + puertoRecepcionMiembros);       // Creador ENVÍA aquí
             this.out.println("MIEMBROS_INVITADOS:" + (miembros.size() - 1));
@@ -258,6 +273,18 @@ public class ClientHandler implements Runnable {
             for (ClientHandler miembro : miembros) {
                 if (!miembro.clientName.equals(this.clientName)) {
                     String ipMiembro = miembro.clientSocket.getInetAddress().getHostAddress();
+                    
+                    // ✅ CORRECCIÓN: Si el miembro está en localhost, usar IP real
+                    if (ipMiembro.equals("127.0.0.1") || ipMiembro.equals("localhost")) {
+                        try {
+                            Socket testSocket = new Socket("8.8.8.8", 53);
+                            ipMiembro = testSocket.getLocalAddress().getHostAddress();
+                            testSocket.close();
+                        } catch (Exception e) {
+                            // Mantener localhost si no se puede detectar
+                        }
+                    }
+                    
                     this.out.println("IP_MIEMBRO:" + ipMiembro);
                     // ✅ CORRECCIÓN: El creador envía donde los miembros escuchan
                     this.out.println("PUERTO_ENVIO_MIEMBRO:" + puertoRecepcionMiembros);
@@ -276,12 +303,12 @@ public class ClientHandler implements Runnable {
                         System.out.println("🔧 Configurando miembro " + miembro.clientName + ":");
                         System.out.println("   IP: " + ipMiembro);
                         System.out.println("   Escucha en: " + puertoRecepcionMiembros + " (recibe del creador)");
-                        System.out.println("   Envía a: " + puertoRecepcionCreador + " (envía al creador)");
+                        System.out.println("   Envía a: " + ipCreador + ":" + puertoRecepcionCreador + " (envía al creador)");
 
                         miembro.out.println("LLAMADA_GRUPAL_INCOMING");
                         miembro.dataOut.writeUTF(this.clientName);
                         miembro.dataOut.writeUTF(grupoDestino);
-                        miembro.dataOut.writeUTF(this.clientSocket.getInetAddress().getHostAddress());
+                        miembro.dataOut.writeUTF(ipCreador);  // ✅ IP REAL del creador
                         miembro.dataOut.writeInt(puertoRecepcionMiembros);  // Donde el miembro ESCUCHA (del creador)
                         miembro.dataOut.writeInt(puertoRecepcionCreador);   // Donde el miembro ENVÍA (al creador)
                         miembro.dataOut.writeUTF(idLlamadaGrupal);
