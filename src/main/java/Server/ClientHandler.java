@@ -323,14 +323,14 @@ public class ClientHandler implements Runnable {
             System.out.println("   Receptor (" + destinatario + "): " + ipReceptor);
 
             // ✅✅✅ CORRECCIÓN CRÍTICA: PUERTOS INVERSOS
-            int puertoBase = 30000 + new Random().nextInt(5000);
+            int puertoBase = 40000 + new Random().nextInt(10000);
             
             // Llamante: ENVÍA al puerto A, RECIBE en puerto B
             int puertoEnvioLlamante = puertoBase;
-            int puertoRecepcionLlamante = puertoBase + 1;
+            int puertoRecepcionLlamante = puertoBase + 100;
             
             // Receptor: ENVÍA al puerto B, RECIBE en puerto A  
-            int puertoEnvioReceptor = puertoBase + 1;
+            int puertoEnvioReceptor = puertoBase + 100;
             int puertoRecepcionReceptor = puertoBase;
 
             System.out.println("🎯 CONFIGURACIÓN BIDIRECCIONAL CORREGIDA:");
