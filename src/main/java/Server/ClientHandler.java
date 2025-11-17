@@ -314,47 +314,66 @@ public class ClientHandler implements Runnable {
         ClientHandler receptor = users.get(destinatario);
 
         try {
-            // ✅ OBTENER IPs REALES
+            // ✅✅✅ CORRECCIÓN CRÍTICA: OBTENER IPs REALES CORRECTAMENTE
             String ipReceptor = receptor.clientSocket.getInetAddress().getHostAddress();
             String ipLlamante = this.clientSocket.getInetAddress().getHostAddress();
 
-            System.out.println("🔍 IPs detectadas:");
-            System.out.println("   Llamante (" + clientName + "): " + ipLlamante);
-            System.out.println("   Receptor (" + destinatario + "): " + ipReceptor);
+            System.out.println("🎯 CONFIGURANDO LLAMADA:");
+            System.out.println("   Llamante: " + clientName + " (" + ipLlamante + ")");
+            System.out.println("   Receptor: " + destinatario + " (" + ipReceptor + ")");
 
-            // ✅✅✅ CORRECCIÓN CRÍTICA: PUERTOS INVERSOS
-            int puertoBase = 40000 + new Random().nextInt(10000);
-            
-            // Llamante: ENVÍA al puerto A, RECIBE en puerto B
+            // ✅ CORRECCIÓN: Si están en la misma red, usar IP local
+            // Si están en redes diferentes, necesitarás configuración de red
+            if (ipLlamante.equals("127.0.0.1") || ipLlamante.equals("localhost")) {
+                System.out.println("⚠️  ADVERTENCIA: Llamante está en localhost");
+                // Intentar obtener IP real de la red
+                try {
+                    Socket testSocket = new Socket("8.8.8.8", 53);
+                    ipLlamante = testSocket.getLocalAddress().getHostAddress();
+                    testSocket.close();
+                    System.out.println("   IP real detectada: " + ipLlamante);
+                } catch (Exception e) {
+                    System.out.println("   No se pudo detectar IP real");
+                }
+            }
+
+            if (ipReceptor.equals("127.0.0.1") || ipReceptor.equals("localhost")) {
+                System.out.println("⚠️  ADVERTENCIA: Receptor está en localhost");
+                // Para testing local, usar 127.0.0.1
+                if (ipLlamante.equals("127.0.0.1") || ipLlamante.equals("localhost")) {
+                    ipReceptor = "127.0.0.1";
+                    ipLlamante = "127.0.0.1";
+                    System.out.println("   ✅ Ambos en localhost - Usando 127.0.0.1");
+                }
+            }
+
+            // ✅ CORRECCIÓN: Puertos bien separados
+            int puertoBase = 50000 + new Random().nextInt(10000);
             int puertoEnvioLlamante = puertoBase;
-            int puertoRecepcionLlamante = puertoBase + 100;
-            
-            // Receptor: ENVÍA al puerto B, RECIBE en puerto A  
-            int puertoEnvioReceptor = puertoBase + 100;
-            int puertoRecepcionReceptor = puertoBase;
+            int puertoRecepcionLlamante = puertoBase + 1000;
 
-            System.out.println("🎯 CONFIGURACIÓN BIDIRECCIONAL CORREGIDA:");
-            System.out.println("   " + clientName + " (" + ipLlamante + ")");
-            System.out.println("     ENVÍA → " + puertoEnvioLlamante + " | RECIBE ← " + puertoRecepcionLlamante);
-            System.out.println("   " + destinatario + " (" + ipReceptor + ")");
-            System.out.println("     ENVÍA → " + puertoEnvioReceptor + " | RECIBE ← " + puertoRecepcionReceptor);
+            System.out.println("🔧 CONFIGURACIÓN DE PUERTOS:");
+            System.out.println("   " + clientName + " ENVÍA → " + ipReceptor + ":" + puertoEnvioLlamante);
+            System.out.println("   " + clientName + " RECIBE ← " + puertoRecepcionLlamante);
+            System.out.println("   " + destinatario + " ENVÍA → " + ipLlamante + ":" + puertoRecepcionLlamante);
+            System.out.println("   " + destinatario + " RECIBE ← " + puertoEnvioLlamante);
 
             // ✅ INFORMAR AL LLAMANTE
             out.println("IP_DESTINO:" + ipReceptor);
             out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);
             out.println("PUERTO_RECEPCION:" + puertoRecepcionLlamante);
 
-            Thread.sleep(100);
+            Thread.sleep(200);
 
-            // ✅ INFORMAR AL RECEPTOR - PUERTOS INVERSOS
+            // ✅ INFORMAR AL RECEPTOR
             receptor.out.println("LLAMADA_INCOMING");
             receptor.dataOut.writeUTF(this.clientName);
             receptor.dataOut.writeUTF(ipLlamante);
-            receptor.dataOut.writeInt(puertoRecepcionReceptor); // Receptor RECIBE en puerto A
-            receptor.dataOut.writeInt(puertoEnvioReceptor);     // Receptor ENVÍA al puerto B
+            receptor.dataOut.writeInt(puertoEnvioLlamante);    // Receptor ESCUCHA aquí
+            receptor.dataOut.writeInt(puertoRecepcionLlamante); // Receptor ENVÍA aquí
             receptor.dataOut.flush();
 
-            System.out.println("✅ Llamada bidireccional configurada CORRECTAMENTE");
+            System.out.println("✅ Configuración de llamada completada");
 
         } catch (Exception e) {
             out.println("Error al iniciar la llamada.");
