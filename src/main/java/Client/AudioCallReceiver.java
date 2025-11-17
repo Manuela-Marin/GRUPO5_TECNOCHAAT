@@ -77,16 +77,11 @@ public class AudioCallReceiver {
 
     // ========== MÉTODO PRIVADO DE RECEPCIÓN ==========
 
-    /**
-     * Método interno que maneja la recepción real de audio
-     */
     private static void ejecutarRecepcionAudio() {
         try {
-            // Configurar formato IDÉNTICO al sender
             AudioFormat formato = new AudioFormat(SAMPLE_RATE, SAMPLE_SIZE, CHANNELS, true, false);
             DataLine.Info info = new DataLine.Info(SourceDataLine.class, formato);
 
-            // Verificar compatibilidad
             if (!AudioSystem.isLineSupported(info)) {
                 System.out.println("⚠️  Formato no soportado, probando alternativo...");
                 formato = new AudioFormat(16000.0f, 16, 1, true, false);
@@ -103,21 +98,21 @@ public class AudioCallReceiver {
             altavoz.open(formato);
             altavoz.start();
 
-            System.out.println("🔊 Altavoz configurado:");
-            System.out.println("   Sample Rate: " + formato.getSampleRate() + " Hz");
-            System.out.println("   Buffer Size: " + BUFFER_SIZE + " bytes");
+            System.out.println("🔊 Altavoz configurado - Puerto: " + puertoEscucha);
 
-            // Configurar socket de recepción
-            System.out.println("🔊 Creando socket en puerto: " + puertoEscucha);
+            // ✅ CORRECCIÓN: Socket con bind explícito
+            System.out.println("🔌 Creando socket en puerto: " + puertoEscucha);
             socket = new DatagramSocket(puertoEscucha);
-            socket.setSoTimeout(2000); // Timeout para verificar estado
+            socket.setSoTimeout(2000);
 
             byte[] buffer = new byte[BUFFER_SIZE];
             inicioRecepcion = System.currentTimeMillis();
 
-            System.out.println("👂 ESCUCHANDO en puerto " + puertoEscucha + " - Esperando paquetes...");
+            System.out.println("👂 ESCUCHANDO ACTIVAMENTE en puerto " + puertoEscucha);
             System.out.println("💡 Escribe '10' en el menú para terminar");
 
+            int timeoutCount = 0;
+            
             // Bucle principal de recepción
             while (recibiendo) {
                 try {
@@ -125,25 +120,29 @@ public class AudioCallReceiver {
                     socket.receive(paquete);
                     
                     if (paquete.getLength() > 0) {
-                        // ✅ CORRECCIÓN: Reproducir inmediatamente sin validaciones complejas
+                        timeoutCount = 0; // Reset timeout counter
+                        
                         if (paquetesRecibidos == 0) {
                             System.out.println("🎉 PRIMER PAQUETE RECIBIDO! - " + paquete.getLength() + " bytes");
                             System.out.println("   Desde: " + paquete.getAddress() + ":" + paquete.getPort());
                         }
+                        
+                        // ✅ Reproducir inmediatamente
                         altavoz.write(paquete.getData(), 0, paquete.getLength());
                         paquetesRecibidos++;
                         bytesRecibidos += paquete.getLength();
                         
-                        // Mostrar progreso cada 100 paquetes
-                        if (paquetesRecibidos % 100 == 0) {
-                            System.out.printf("📥 Recibidos: %d paquetes\r", paquetesRecibidos);
+                        if (paquetesRecibidos % 50 == 0) {
+                            System.out.printf("📥 Recibidos: %d paquetes desde %s\r", 
+                                paquetesRecibidos, paquete.getAddress());
                         }
                     }
                     
                 } catch (java.net.SocketTimeoutException e) {
-                    // Timeout normal - verificar si debemos continuar
-                    if (paquetesRecibidos == 0) {
-                        System.out.printf("⏳ Esperando audio... (timeout %d)\r", System.currentTimeMillis() % 10);
+                    timeoutCount++;
+                    if (timeoutCount % 10 == 0) {
+                        System.out.printf("⏳ Esperando audio en puerto %d... (timeouts: %d)\r", 
+                            puertoEscucha, timeoutCount);
                     }
                     if (!recibiendo) break;
                 } catch (Exception e) {
@@ -153,14 +152,9 @@ public class AudioCallReceiver {
                 }
             }
 
-        } catch (LineUnavailableException e) {
-            System.err.println("❌ Altavoz no disponible: " + e.getMessage());
-        } catch (SocketException e) {
-            if (recibiendo) {
-                System.err.println("❌ Error de socketen puerto " + puertoEscucha + ": " + e.getMessage());
-            }
         } catch (Exception e) {
             System.err.println("💥 ERROR en AudioCallReceiver: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             cerrarRecursos();
             mostrarEstadisticasFinales();

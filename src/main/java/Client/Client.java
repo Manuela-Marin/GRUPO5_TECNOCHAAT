@@ -104,19 +104,18 @@ public class Client {
         }
     }
 
-    // Llamada entrante individual
-    // Llamada entrante individual - VERSIÓN SIMPLIFICADA
+    // Llamada entrante individual - VERSIÓN CORREGIDA
     private static void manejarLlamadaEntrante(DataInputStream dataIn, PrintWriter out) {
         try {
             String emisor = dataIn.readUTF();
             String ip = dataIn.readUTF();
-            int puertoRecepcion = dataIn.readInt();
-            int puertoEnvio = dataIn.readInt();
+            int puertoRecepcion = dataIn.readInt();  // Donde DEBO escuchar
+            int puertoEnvio = dataIn.readInt();      // Donde DEBO enviar
 
             System.out.println("\n📞 LLAMADA ENTRANTE de " + emisor);
-            System.out.println("   IP: " + ip);
-            System.out.println("   Puerto Recepción: " + puertoRecepcion);
-            System.out.println("   Puerto Envío: " + puertoEnvio);
+            System.out.println("   IP Remitente: " + ip);
+            System.out.println("   Yo ESCUCHO en: " + puertoRecepcion);
+            System.out.println("   Yo ENVÍO a: " + puertoEnvio);
             System.out.println("¿Aceptar llamada? (S/N):");
             
             String respuesta;
@@ -126,25 +125,28 @@ public class Client {
             }
 
             if (respuesta.equals("S")) {
-                System.out.println("✅ Llamada aceptada - Conectando...");
+                System.out.println("✅ Llamada aceptada - Configurando...");
                 
-                // Configuración simple
+                // ✅ CORRECCIÓN: Configurar DESTINO correcto
                 AudioCallSender.prepararNuevaLlamada();
                 AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
 
+                // ✅ CORRECCIÓN: Iniciar recepción PRIMERO con delay
                 new Thread(() -> {
                     try {
-                        System.out.println("🎧 Iniciando receptor en puerto " + puertoRecepcion + "...");
-                // Iniciar componentes
-                AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
-                Thread.sleep(2000);
-                System.out.println("🎤 Iniciando envío a puerto " + puertoEnvio + "...");
-                AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
-
-                llamadaActiva = true;
-                out.println("CALL_ACCEPTED");
-                System.out.println("💚 Llamada en curso - Escribe '10' para terminar");
-                } catch (Exception e) {
+                        System.out.println("🎧 Iniciando RECEPTOR en puerto " + puertoRecepcion);
+                        AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
+                        
+                        // Esperar a que el receptor esté listo
+                        Thread.sleep(2000);
+                        
+                        System.out.println("🎤 Iniciando ENVÍO a puerto " + puertoEnvio);
+                        AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
+                        
+                        llamadaActiva = true;
+                        out.println("CALL_ACCEPTED");
+                        System.out.println("💚 Llamada BIDIRECCIONAL ACTIVA - Escribe '10' para terminar");
+                    } catch (Exception e) {
                         System.err.println("❌ Error iniciando llamada: " + e.getMessage());
                     }
                 }).start();
@@ -155,38 +157,43 @@ public class Client {
             
         } catch (Exception e) {
             System.err.println("Error al manejar llamada: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     // Configuración de llamada individual - VERSIÓN SIMPLIFICADA
-   
-    private static void manejarConfiguracionLlamada(String lineaRecibida, BufferedReader in) {
+   private static void manejarConfiguracionLlamada(String lineaRecibida, BufferedReader in) {
         try {
             String ip = lineaRecibida.split(":")[1];
-            int puertoEnvio = Integer.parseInt(in.readLine().split(":")[1]);
-            int puertoRecepcion = Integer.parseInt(in.readLine().split(":")[1]);
+            int puertoEnvio = Integer.parseInt(in.readLine().split(":")[1]);  // Donde ENVÍO
+            int puertoRecepcion = Integer.parseInt(in.readLine().split(":")[1]); // Donde RECIBO
 
-            System.out.println("✅ Llamada conectada - Configurando comunicación bidireccional...");
+            System.out.println("✅ Llamada conectada - Configuración CORREGIDA:");
             System.out.println("   IP Destino: " + ip);
-            System.out.println("   Puerto Envío: " + puertoEnvio);
-            System.out.println("   Puerto Recepción: " + puertoRecepcion);
+            System.out.println("   Yo ENVÍO a: " + puertoEnvio);
+            System.out.println("   Yo RECIBO en: " + puertoRecepcion);
 
-            // ✅ CORRECCIÓN: Iniciar recepción PRIMERO con delay
+            // ✅ CORRECCIÓN: Configurar destino CORRECTO
+            AudioCallSender.prepararNuevaLlamada();
+            AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
+
+            // ✅ CORRECCIÓN: Iniciar recepción PRIMERO
             new Thread(() -> {
                 try {
-                    System.out.println("🎧 Iniciando receptor en puerto " + puertoRecepcion + "...");
+                    System.out.println("🎧 Iniciando RECEPTOR en puerto " + puertoRecepcion);
                     AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
                     
                     // Esperar a que el receptor esté listo
                     Thread.sleep(2000);
                     
-                    System.out.println("🎤 Iniciando envío a puerto " + puertoEnvio + "...");
+                    System.out.println("🎤 Iniciando ENVÍO a puerto " + puertoEnvio);
                     AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
                     
                     llamadaActiva = true;
-                    System.out.println("💚 Llamada bidireccional ACTIVA - Escribe '10' para terminar");
+                    System.out.println("💚 Llamada BIDIRECCIONAL ACTIVA - Escribe '10' para terminar");
                 } catch (Exception e) {
                     System.err.println("❌ Error iniciando llamada: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }).start();
             
