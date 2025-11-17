@@ -210,16 +210,16 @@ public class Client {
             String emisor = dataIn.readUTF();
             String grupo = dataIn.readUTF();
             String ipCreador = dataIn.readUTF();
-            int puertoRecepcion = dataIn.readInt();  // Donde YO debo ESCUCHAR
-            int puertoEnvio = dataIn.readInt();      // Donde YO debo ENVIAR
+            int puertoRecepcionMiembro = dataIn.readInt();  // Donde YO (miembro) debo ESCUCHAR
+            int puertoEnvioMiembro = dataIn.readInt();      // Donde YO (miembro) debo ENVIAR (al creador)
             String idLlamada = dataIn.readUTF();
 
             System.out.println("\n📞 LLAMADA GRUPAL ENTRANTE");
-            System.out.println("   De: " + emisor);
+            System.out.println("   De: " + emisor + " (Creador)");
             System.out.println("   Grupo: " + grupo);
             System.out.println("   IP Creador: " + ipCreador);
-            System.out.println("   Yo ESCUCHO en: " + puertoRecepcion);
-            System.out.println("   Yo ENVÍO a: " + puertoEnvio);
+            System.out.println("   Yo ESCUCHO en: " + puertoRecepcionMiembro);
+            System.out.println("   Yo ENVÍO a creador: " + ipCreador + ":" + puertoEnvioMiembro);
             System.out.println("   ID Llamada: " + idLlamada);
             System.out.println("¿Unirte a la llamada grupal? (S/N):");
             
@@ -230,26 +230,26 @@ public class Client {
             }
 
             if (respuesta.equals("S")) {
-                System.out.println("✅ Uniéndote a llamada grupal...");
+                System.out.println("✅ Uniéndote a llamada grupal como MIEMBRO...");
 
-                // ✅ CORRECCIÓN: Configurar destino CORRECTO (solo al creador inicialmente)
+                // ✅ CORRECCIÓN: Configurar solo al CREADOR como destino inicial
                 AudioCallSender.prepararNuevaLlamada();
-                AudioCallSender.agregarDestinoLlamada(ipCreador, puertoEnvio);
+                AudioCallSender.agregarDestinoLlamada(ipCreador, puertoEnvioMiembro);
 
                 new Thread(() -> {
                     try {
-                        System.out.println("🎧 Iniciando RECEPTOR GRUPAL en puerto " + puertoRecepcion);
-                        AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
+                        System.out.println("🎧 Iniciando RECEPTOR GRUPAL en puerto " + puertoRecepcionMiembro);
+                        AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcionMiembro, idLlamada);
                         
                         // Esperar a que el receptor esté listo
                         Thread.sleep(3000);
                         
-                        System.out.println("🎤 Iniciando ENVÍO GRUPAL a " + ipCreador + ":" + puertoEnvio);
+                        System.out.println("🎤 Iniciando ENVÍO GRUPAL a " + ipCreador + ":" + puertoEnvioMiembro);
                         AudioCallSender.iniciarLlamadaGrupal(idLlamada);
                         
                         llamadaActiva = true;
                         out.println("CALL_GRUPAL_ACCEPTED");
-                        System.out.println("💚 En llamada grupal - Escribe '10' para salir");
+                        System.out.println("💚 En llamada grupal como MIEMBRO - Escribe '10' para salir");
                     } catch (Exception e) {
                         System.err.println("❌ Error uniéndose a llamada grupal: " + e.getMessage());
                         e.printStackTrace();
@@ -273,34 +273,50 @@ public class Client {
             String miembrosLine = in.readLine().split(":")[1];
             String idLlamada = in.readLine().split(":")[1];
 
-            int puertoRecepcion = Integer.parseInt(puertoRecepcionLine);
-            int puertoEnvio = Integer.parseInt(puertoEnvioLine);
+            int puertoRecepcionCreador = Integer.parseInt(puertoRecepcionLine);
+            int puertoEnvioCreador = Integer.parseInt(puertoEnvioLine);
             int miembrosInvitados = Integer.parseInt(miembrosLine);
 
             System.out.println("✅ Configurando llamada grupal como CREADOR");
-            System.out.println("   Yo ESCUCHO en: " + puertoRecepcion);
-            System.out.println("   Yo ENVÍO a: " + puertoEnvio);
+            System.out.println("   Yo ESCUCHO en: " + puertoRecepcionCreador);
+            System.out.println("   Yo ENVÍO a mi puerto: " + puertoEnvioCreador);
             System.out.println("   Miembros invitados: " + miembrosInvitados);
             System.out.println("   ID Llamada: " + idLlamada);
 
-            // ✅ CORRECCIÓN: Configurar TODOS los destinos
+            // ✅ CORRECCIÓN: Configurar TODOS los destinos (comunicación MESH)
             AudioCallSender.prepararNuevaLlamada();
             
-            // Agregar IPs de todos los miembros
-            List<String> ipsMiembros = new ArrayList<>();
+            // Agregar el propio puerto de envío del creador como destino base
+            AudioCallSender.agregarDestinoLlamada(ipCreador, puertoEnvioCreador);
+            System.out.println("   ✅ Destino base agregado: " + ipCreador + ":" + puertoEnvioCreador);
+
+            // ✅ CORRECCIÓN: Leer configuración de CADA miembro
+            List<String> configMiembros = new ArrayList<>();
             String linea;
             while (!(linea = in.readLine()).equals("END_IP_LIST")) {
                 if (linea.startsWith("IP_MIEMBRO:")) {
                     String ipMiembro = linea.split(":")[1];
-                    AudioCallSender.agregarDestinoLlamada(ipMiembro, puertoEnvio);
-                    ipsMiembros.add(ipMiembro);
-                    System.out.println("   ✅ Destino agregado: " + ipMiembro + ":" + puertoEnvio);
+                    String puertoEnvioMiembroLine = in.readLine();
+                    String puertoRecepcionMiembroLine = in.readLine();
+                    
+                    if (puertoEnvioMiembroLine.startsWith("PUERTO_ENVIO_MIEMBRO:") && 
+                        puertoRecepcionMiembroLine.startsWith("PUERTO_RECEPCION_MIEMBRO:")) {
+                        
+                        int puertoEnvioMiembro = Integer.parseInt(puertoEnvioMiembroLine.split(":")[1]);
+                        int puertoRecepcionMiembro = Integer.parseInt(puertoRecepcionMiembroLine.split(":")[1]);
+                        
+                        // Agregar este miembro como destino
+                        AudioCallSender.agregarDestinoLlamada(ipMiembro, puertoEnvioMiembro);
+                        configMiembros.add(ipMiembro + ":" + puertoEnvioMiembro + " (escucha:" + puertoRecepcionMiembro + ")");
+                        
+                        System.out.println("   ✅ Miembro agregado: " + ipMiembro + ":" + puertoEnvioMiembro);
+                    }
                 }
             }
 
-            System.out.println("   Total destinos: " + (ipsMiembros.size() + 1) + " (incluyendo miembros)");
+            System.out.println("   Total destinos configurados: " + (configMiembros.size() + 1));
 
-            // Iniciar llamada grupal con delay
+            // Iniciar llamada grupal
             new Thread(() -> {
                 try {
                     System.out.println("🎤 Iniciando ENVÍO GRUPAL como CREADOR");
@@ -308,11 +324,11 @@ public class Client {
                     
                     Thread.sleep(3000);
                     
-                    System.out.println("🎧 Iniciando RECEPTOR GRUPAL en puerto " + puertoRecepcion);
-                    AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
+                    System.out.println("🎧 Iniciando RECEPTOR GRUPAL en puerto " + puertoRecepcionCreador);
+                    AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcionCreador, idLlamada);
 
                     llamadaActiva = true;
-                    System.out.println("💚 Llamada grupal ACTIVA como CREADOR - Escribe '10' para salir");
+                    System.out.println("💚 Llamada grupal MESH ACTIVA - Escribe '10' para salir");
                 } catch (Exception e) {
                     System.err.println("❌ Error iniciando llamada grupal: " + e.getMessage());
                     e.printStackTrace();

@@ -223,58 +223,75 @@ public class ClientHandler implements Runnable {
         }
 
         try {
-            // ✅ CORRECCIÓN: Puertos bien separados y únicos
+            // ✅ CORRECCIÓN: Puertos únicos para esta llamada grupal
             int puertoBase = 50000 + new Random().nextInt(10000);
-            int puertoEnvio = puertoBase;
-            int puertoRecepcion = puertoBase + 1000;
             String idLlamadaGrupal = grupoDestino + "_" + System.currentTimeMillis();
 
             System.out.println("🎯 INICIANDO LLAMADA GRUPAL:");
             System.out.println("   Creador: " + clientName);
             System.out.println("   Grupo: " + grupoDestino);
-            System.out.println("   Miembros: " + miembros.size());
-            System.out.println("   Puerto Envio: " + puertoEnvio);
-            System.out.println("   Puerto Recepcion: " + puertoRecepcion);
+            System.out.println("   Miembros totales: " + miembros.size());
+            System.out.println("   Puerto base: " + puertoBase);
 
-            // ✅✅✅ CORRECCIÓN CRÍTICA: Configurar al CREADOR primero
+            // ✅✅✅ CORRECCIÓN CRÍTICA: Configurar comunicación MESH
+            // Cada miembro tendrá su propio par de puertos
+            
+            // 1. PRIMERO configurar al CREADOR
+            int puertoEnvioCreador = puertoBase;
+            int puertoRecepcionCreador = puertoBase + 1000;
+            
             this.out.println("CONFIG_LLAMADA_GRUPAL");
             this.out.println("IP_CREADOR:" + this.clientSocket.getInetAddress().getHostAddress());
-            this.out.println("PUERTO_RECEPCION:" + puertoRecepcion);
-            this.out.println("PUERTO_ENVIO:" + puertoEnvio);
+            this.out.println("PUERTO_RECEPCION:" + puertoRecepcionCreador);
+            this.out.println("PUERTO_ENVIO:" + puertoEnvioCreador);
             this.out.println("MIEMBROS_INVITADOS:" + (miembros.size() - 1));
             this.out.println("ID_LLAMADA:" + idLlamadaGrupal);
+
+            // ✅ CORRECCIÓN: Asignar puertos únicos a CADA miembro
+            int contadorPuerto = 1;
+            Map<ClientHandler, Integer> puertosMiembros = new HashMap<>();
             
-            // ✅ CORRECCIÓN: Enviar IPs REALES de todos los miembros
-            List<String> ipsMiembros = new ArrayList<>();
             for (ClientHandler miembro : miembros) {
                 if (!miembro.clientName.equals(this.clientName)) {
-                    String ipMiembro = miembro.clientSocket.getInetAddress().getHostAddress();
-                    ipsMiembros.add(ipMiembro);
-                    this.out.println("IP_MIEMBRO:" + ipMiembro);
+                    int puertoEnvioMiembro = puertoBase + (contadorPuerto * 100);
+                    int puertoRecepcionMiembro = puertoEnvioMiembro + 50;
+                    puertosMiembros.put(miembro, puertoEnvioMiembro);
+                    
+                    // Informar al creador sobre este miembro
+                    this.out.println("IP_MIEMBRO:" + miembro.clientSocket.getInetAddress().getHostAddress());
+                    this.out.println("PUERTO_ENVIO_MIEMBRO:" + puertoEnvioMiembro);
+                    this.out.println("PUERTO_RECEPCION_MIEMBRO:" + puertoRecepcionMiembro);
+                    
+                    contadorPuerto++;
                 }
             }
             this.out.println("END_IP_LIST");
 
-            System.out.println("📡 IPs de miembros: " + ipsMiembros);
-
-            // ✅ CORRECCIÓN: Notificar a los MIEMBROS con configuración CORRECTA
+            // ✅ CORRECCIÓN: Notificar a CADA miembro con su configuración única
             int miembrosNotificados = 0;
             for (ClientHandler miembro : miembros) {
                 if (!miembro.clientName.equals(this.clientName)) {
                     try {
                         String ipMiembro = miembro.clientSocket.getInetAddress().getHostAddress();
+                        int puertoEnvioMiembro = puertosMiembros.get(miembro);
+                        int puertoRecepcionMiembro = puertoEnvioMiembro + 50;
                         
+                        System.out.println("🔧 Configurando miembro " + miembro.clientName + ":");
+                        System.out.println("   IP: " + ipMiembro);
+                        System.out.println("   Envía a: " + puertoEnvioCreador);
+                        System.out.println("   Escucha en: " + puertoRecepcionMiembro);
+
                         miembro.out.println("LLAMADA_GRUPAL_INCOMING");
                         miembro.dataOut.writeUTF(this.clientName);
                         miembro.dataOut.writeUTF(grupoDestino);
-                        miembro.dataOut.writeUTF(this.clientSocket.getInetAddress().getHostAddress()); // IP del creador
-                        miembro.dataOut.writeInt(puertoRecepcion);  // Donde el miembro ESCUCHA
-                        miembro.dataOut.writeInt(puertoEnvio);      // Donde el miembro ENVÍA
+                        miembro.dataOut.writeUTF(this.clientSocket.getInetAddress().getHostAddress());
+                        miembro.dataOut.writeInt(puertoRecepcionMiembro);  // Donde el miembro ESCUCHA
+                        miembro.dataOut.writeInt(puertoEnvioCreador);      // Donde el miembro ENVÍA (al creador)
                         miembro.dataOut.writeUTF(idLlamadaGrupal);
                         miembro.dataOut.flush();
                         
                         miembrosNotificados++;
-                        System.out.println("   ✅ Notificado: " + miembro.clientName + " (" + ipMiembro + ")");
+                        System.out.println("   ✅ Miembro configurado: " + miembro.clientName);
 
                     } catch (Exception e) {
                         System.err.println("   ❌ Error notificando a " + miembro.clientName + ": " + e.getMessage());
@@ -282,7 +299,7 @@ public class ClientHandler implements Runnable {
                 }
             }
 
-            System.out.println("✅ Llamada grupal configurada - " + miembrosNotificados + " miembros notificados");
+            System.out.println("✅ Llamada grupal MESH configurada - " + miembrosNotificados + " miembros");
             out.println("Llamada grupal iniciada al grupo '" + grupoDestino + "'. Esperando respuestas...");
 
         } catch (Exception e) {
