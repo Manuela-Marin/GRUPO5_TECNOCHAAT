@@ -210,16 +210,16 @@ public class Client {
             String emisor = dataIn.readUTF();
             String grupo = dataIn.readUTF();
             String ipCreador = dataIn.readUTF();
-            int puertoRecepcionMiembro = dataIn.readInt();  // Donde YO (miembro) debo ESCUCHAR
-            int puertoEnvioMiembro = dataIn.readInt();      // Donde YO (miembro) debo ENVIAR (al CREADOR)
+            int puertoRecepcionMiembro = dataIn.readInt();  // Donde YO (miembro) debo ESCUCHAR (del creador)
+            int puertoEnvioMiembro = dataIn.readInt();      // Donde YO (miembro) debo ENVIAR (al creador)
             String idLlamada = dataIn.readUTF();
 
             System.out.println("\n📞 LLAMADA GRUPAL ENTRANTE");
             System.out.println("   De: " + emisor + " (Creador)");
             System.out.println("   Grupo: " + grupo);
             System.out.println("   IP Creador: " + ipCreador);
-            System.out.println("   Yo ESCUCHO en: " + puertoRecepcionMiembro);
-            System.out.println("   Yo ENVÍO a CREADOR: " + ipCreador + ":" + puertoEnvioMiembro);
+            System.out.println("   Yo ESCUCHO en: " + puertoRecepcionMiembro + " (recibo del creador)");
+            System.out.println("   Yo ENVÍO a: " + ipCreador + ":" + puertoEnvioMiembro + " (envío al creador)");
             System.out.println("   ID Llamada: " + idLlamada);
             System.out.println("¿Unirte a la llamada grupal? (S/N):");
             
@@ -241,7 +241,7 @@ public class Client {
                         System.out.println("🎧 Iniciando RECEPTOR GRUPAL en puerto " + puertoRecepcionMiembro);
                         AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcionMiembro, idLlamada);
                         
-                        // Esperar a que el receptor esté listo
+                        // Esperar a que el receptor esté listo antes de enviar
                         Thread.sleep(3000);
                         
                         System.out.println("🎤 Iniciando ENVÍO GRUPAL a CREADOR: " + ipCreador + ":" + puertoEnvioMiembro);
@@ -279,18 +279,18 @@ public class Client {
 
             System.out.println("✅ Configurando llamada grupal como CREADOR");
             System.out.println("   IP Creador: " + ipCreador);
-            System.out.println("   Yo ESCUCHO en: " + puertoRecepcionCreador);
-            System.out.println("   Miembros me ENVÍAN a: " + puertoEnvioCreador);
+            System.out.println("   Yo ESCUCHO en: " + puertoRecepcionCreador + " (miembros me ENVÍAN aquí)");
+            System.out.println("   Yo ENVÍO a: " + puertoEnvioCreador + " (miembros ESCUCHAN aquí)");
             System.out.println("   Miembros invitados: " + miembrosInvitados);
 
             // ✅ CORRECCIÓN: Configurar TODOS los miembros como destinos
             AudioCallSender.prepararNuevaLlamada();
             
             // ✅ CORRECCIÓN: Usar lista para almacenar info de destinos
-            java.util.List<String> destinosInfo = new java.util.ArrayList<>();
+            List<String> destinosInfo = new ArrayList<>();
+            String linea;
             
             // Leer configuración de miembros
-            String linea;
             while (!(linea = in.readLine()).equals("END_IP_LIST")) {
                 if (linea.startsWith("IP_MIEMBRO:")) {
                     String ipMiembro = linea.split(":")[1];
@@ -298,25 +298,26 @@ public class Client {
                     
                     if (puertoLine != null && puertoLine.startsWith("PUERTO_ENVIO_MIEMBRO:")) {
                         int puertoEnvioMiembro = Integer.parseInt(puertoLine.split(":")[1]);
+                        
+                        // ✅ CORRECCIÓN: El creador envía donde los miembros escuchan
                         AudioCallSender.agregarDestinoLlamada(ipMiembro, puertoEnvioMiembro);
                         destinosInfo.add(ipMiembro + ":" + puertoEnvioMiembro);
+                        System.out.println("   ✅ Agregado destino: " + ipMiembro + ":" + puertoEnvioMiembro);
                     }
                 }
             }
 
             System.out.println("   Total destinos configurados: " + destinosInfo.size());
-            for (String destino : destinosInfo) {
-                System.out.println("   ✅ " + destino);
-            }
 
             if (destinosInfo.isEmpty()) {
-                System.err.println("❌ ERROR: No se configuraron destinos");
+                System.err.println("❌ ERROR: No se configuraron destinos para la llamada grupal");
                 return;
             }
 
             // ✅ CORRECCIÓN: Usar variable final para el thread
             final int totalDestinosFinal = destinosInfo.size();
 
+            // ✅ CORRECCIÓN: Iniciar llamada grupal con delays adecuados
             new Thread(() -> {
                 try {
                     System.out.println("🎤 INICIANDO ENVÍO GRUPAL como CREADOR");
@@ -327,7 +328,7 @@ public class Client {
                     
                     AudioCallSender.iniciarLlamadaGrupal(idLlamada);
                     
-                    // Esperar antes de iniciar receptor
+                    // Esperar a que el envío esté activo antes de iniciar recepción
                     Thread.sleep(2000);
                     
                     System.out.println("🎧 Iniciando RECEPTOR GRUPAL en puerto " + puertoRecepcionCreador);
