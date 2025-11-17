@@ -280,56 +280,54 @@ public class Client {
             System.out.println("✅ Configurando llamada grupal como CREADOR");
             System.out.println("   IP Creador: " + ipCreador);
             System.out.println("   Yo ESCUCHO en: " + puertoRecepcionCreador);
-            System.out.println("   Yo ENVÍO a miembros en: " + puertoEnvioCreador);
+            System.out.println("   Miembros me ENVÍAN a: " + puertoEnvioCreador);
             System.out.println("   Miembros invitados: " + miembrosInvitados);
 
             // ✅ CORRECCIÓN: Configurar TODOS los miembros como destinos
             AudioCallSender.prepararNuevaLlamada();
             
-            // ✅✅✅ CORRECCIÓN: Usar un array para hacerla "effectively final"
-            final int[] destinosArray = {0}; // Array para contador
+            // ✅ CORRECCIÓN: Usar lista para almacenar info de destinos
+            java.util.List<String> destinosInfo = new java.util.ArrayList<>();
             
-            // ✅ CORRECCIÓN: Leer configuración de CADA miembro
+            // Leer configuración de miembros
             String linea;
-            
             while (!(linea = in.readLine()).equals("END_IP_LIST")) {
                 if (linea.startsWith("IP_MIEMBRO:")) {
                     String ipMiembro = linea.split(":")[1];
-                    
-                    // Leer siguiente línea que debe ser el puerto
                     String puertoLine = in.readLine();
+                    
                     if (puertoLine != null && puertoLine.startsWith("PUERTO_ENVIO_MIEMBRO:")) {
                         int puertoEnvioMiembro = Integer.parseInt(puertoLine.split(":")[1]);
-                        
                         AudioCallSender.agregarDestinoLlamada(ipMiembro, puertoEnvioMiembro);
-                        destinosArray[0]++; // ✅ Acceder al elemento del array
-                        
-                        System.out.println("   ✅ Agregado destino: " + ipMiembro + ":" + puertoEnvioMiembro);
+                        destinosInfo.add(ipMiembro + ":" + puertoEnvioMiembro);
                     }
                 }
             }
 
-            System.out.println("   Total destinos configurados: " + destinosArray[0]);
+            System.out.println("   Total destinos configurados: " + destinosInfo.size());
+            for (String destino : destinosInfo) {
+                System.out.println("   ✅ " + destino);
+            }
 
-            if (destinosArray[0] == 0) {
-                System.err.println("❌ ERROR: No se configuraron destinos para la llamada grupal");
+            if (destinosInfo.isEmpty()) {
+                System.err.println("❌ ERROR: No se configuraron destinos");
                 return;
             }
 
-            // ✅ CORRECCIÓN: Guardar el valor en una variable final para usar en el thread
-            final int totalDestinos = destinosArray[0];
+            // ✅ CORRECCIÓN: Usar variable final para el thread
+            final int totalDestinosFinal = destinosInfo.size();
 
-            // ✅ CORRECCIÓN: Iniciar llamada grupal con delay adecuado
             new Thread(() -> {
                 try {
                     System.out.println("🎤 INICIANDO ENVÍO GRUPAL como CREADOR");
-                    System.out.println("   Destinos: " + totalDestinos); // ✅ Usar variable final
+                    System.out.println("   Destinos: " + totalDestinosFinal);
                     
-                    // Pequeño delay para asegurar que los miembros estén listos
-                    Thread.sleep(3000);
+                    // Esperar a que los miembros configuren sus receptores
+                    Thread.sleep(4000);
                     
                     AudioCallSender.iniciarLlamadaGrupal(idLlamada);
                     
+                    // Esperar antes de iniciar receptor
                     Thread.sleep(2000);
                     
                     System.out.println("🎧 Iniciando RECEPTOR GRUPAL en puerto " + puertoRecepcionCreador);
