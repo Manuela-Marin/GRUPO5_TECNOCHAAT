@@ -135,7 +135,7 @@ public class AudioCallReceiver {
                         bytesRecibidos += paquete.getLength();
                         
                         // Mostrar progreso cada 100 paquetes
-                        if (paquetesRecibidos % 10 == 0) {
+                        if (paquetesRecibidos % 100 == 0) {
                             System.out.printf("📥 Recibidos: %d paquetes\r", paquetesRecibidos);
                         }
                     }

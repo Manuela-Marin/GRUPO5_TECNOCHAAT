@@ -114,6 +114,9 @@ public class Client {
             int puertoEnvio = dataIn.readInt();
 
             System.out.println("\n📞 LLAMADA ENTRANTE de " + emisor);
+            System.out.println("   IP: " + ip);
+            System.out.println("   Puerto Recepción: " + puertoRecepcion);
+            System.out.println("   Puerto Envío: " + puertoEnvio);
             System.out.println("¿Aceptar llamada? (S/N):");
             
             String respuesta;
@@ -129,15 +132,22 @@ public class Client {
                 AudioCallSender.prepararNuevaLlamada();
                 AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
 
+                new Thread(() -> {
+                    try {
+                        System.out.println("🎧 Iniciando receptor en puerto " + puertoRecepcion + "...");
                 // Iniciar componentes
                 AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
-                Thread.sleep(1000);
+                Thread.sleep(2000);
+                System.out.println("🎤 Iniciando envío a puerto " + puertoEnvio + "...");
                 AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
 
                 llamadaActiva = true;
                 out.println("CALL_ACCEPTED");
                 System.out.println("💚 Llamada en curso - Escribe '10' para terminar");
-                
+                } catch (Exception e) {
+                        System.err.println("❌ Error iniciando llamada: " + e.getMessage());
+                    }
+                }).start();
             } else {
                 System.out.println("❌ Llamada rechazada");
                 out.println("CALL_REJECTED");
@@ -153,39 +163,35 @@ public class Client {
     private static void manejarConfiguracionLlamada(String lineaRecibida, BufferedReader in) {
         try {
             String ip = lineaRecibida.split(":")[1];
-            String puertoEnvioLine = in.readLine();
-            String puertoRecepcionLine = in.readLine();
+            int puertoEnvio = Integer.parseInt(in.readLine().split(":")[1]);
+            int puertoRecepcion = Integer.parseInt(in.readLine().split(":")[1]);
 
-            if (puertoEnvioLine != null && puertoEnvioLine.startsWith("PUERTO_ENVIO:") &&
-                puertoRecepcionLine != null && puertoRecepcionLine.startsWith("PUERTO_RECEPCION:")) {
-                
-                int puertoEnvio = Integer.parseInt(puertoEnvioLine.split(":")[1]);
-                int puertoRecepcion = Integer.parseInt(puertoRecepcionLine.split(":")[1]);
+            System.out.println("✅ Llamada conectada - Configurando comunicación bidireccional...");
+            System.out.println("   IP Destino: " + ip);
+            System.out.println("   Puerto Envío: " + puertoEnvio);
+            System.out.println("   Puerto Recepción: " + puertoRecepcion);
 
-                System.out.println("✅ Llamada conectada - Configurando...");
-                System.out.println("   IP Destino: " + ip);
-                System.out.println("   Puerto Envío: " + puertoEnvio);
-                System.out.println("   Puerto Recepción: " + puertoRecepcion);
-
-                // ✅ CORRECCIÓN: Iniciar recepción PRIMERO con delay
-                new Thread(() -> {
-                    try {
-                        System.out.println("🎧 Iniciando receptor...");
-                        AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
-                        Thread.sleep(2000); // Esperar a que el receptor esté listo
-                        
-                        System.out.println("🎤 Iniciando envío...");
-                        AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
-                        
-                        llamadaActiva = true;
-                        System.out.println("💚 Llamada bidireccional ACTIVA - Escribe '10' para terminar");
-                    } catch (Exception e) {
-                        System.err.println("Error iniciando llamada: " + e.getMessage());
-                    }
-                }).start();
-            }
+            // ✅ CORRECCIÓN: Iniciar recepción PRIMERO con delay
+            new Thread(() -> {
+                try {
+                    System.out.println("🎧 Iniciando receptor en puerto " + puertoRecepcion + "...");
+                    AudioCallReceiver.iniciarRecepcionIndividual(puertoRecepcion);
+                    
+                    // Esperar a que el receptor esté listo
+                    Thread.sleep(2000);
+                    
+                    System.out.println("🎤 Iniciando envío a puerto " + puertoEnvio + "...");
+                    AudioCallSender.iniciarLlamadaIndividual(ip, puertoEnvio);
+                    
+                    llamadaActiva = true;
+                    System.out.println("💚 Llamada bidireccional ACTIVA - Escribe '10' para terminar");
+                } catch (Exception e) {
+                    System.err.println("❌ Error iniciando llamada: " + e.getMessage());
+                }
+            }).start();
+            
         } catch (Exception e) {
-            System.err.println("Error en configuración: " + e.getMessage());
+            System.err.println("❌ Error en configuración: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -217,20 +223,26 @@ public class Client {
                 AudioCallSender.prepararNuevaLlamada();
                 AudioCallSender.agregarDestinoLlamada(ip, puertoEnvio);
 
-                // Iniciar recepción y envío
-                AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
-                Thread.sleep(1000);
-                AudioCallSender.iniciarLlamadaGrupal(idLlamada);
+                // Iniciar recepción y envío con delay
+                new Thread(() -> {
+                    try {
+                        AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
+                        Thread.sleep(2000);
+                        AudioCallSender.iniciarLlamadaGrupal(idLlamada);
 
-                llamadaActiva = true;
-                out.println("CALL_GRUPAL_ACCEPTED");
-                System.out.println("💚 En llamada grupal - Escribe '10' para salir");
+                        llamadaActiva = true;
+                        out.println("CALL_GRUPAL_ACCEPTED");
+                        System.out.println("💚 En llamada grupal - Escribe '10' para salir");
+                    } catch (Exception e) {
+                        System.err.println("❌ Error uniéndose a llamada grupal: " + e.getMessage());
+                    }
+                }).start();
             } else {
                 System.out.println("❌ Llamada grupal rechazada.");
                 out.println("CALL_GRUPAL_REJECTED");
             }
         } catch (Exception e) {
-            System.err.println("Error al manejar llamada grupal: " + e.getMessage());
+            System.err.println("❌ Error al manejar llamada grupal: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -262,16 +274,22 @@ public class Client {
                 }
             }
 
-            // Iniciar llamada grupal
-            AudioCallSender.iniciarLlamadaGrupal(idLlamada);
-            Thread.sleep(500);
-            AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
+            // Iniciar llamada grupal con delay
+            new Thread(() -> {
+                try {
+                    AudioCallSender.iniciarLlamadaGrupal(idLlamada);
+                    Thread.sleep(2000);
+                    AudioCallReceiver.iniciarRecepcionGrupal(puertoRecepcion, idLlamada);
 
-            llamadaActiva = true;
-            System.out.println("💚 Llamada grupal activa - Escribe '10' para salir");
+                    llamadaActiva = true;
+                    System.out.println("💚 Llamada grupal activa - Escribe '10' para salir");
+                } catch (Exception e) {
+                    System.err.println("❌ Error iniciando llamada grupal: " + e.getMessage());
+                }
+            }).start();
 
         } catch (Exception e) {
-            System.err.println("Error en configuración de llamada grupal: " + e.getMessage());
+            System.err.println("❌ Error en configuración de llamada grupal: " + e.getMessage());
             e.printStackTrace();
         }
     }

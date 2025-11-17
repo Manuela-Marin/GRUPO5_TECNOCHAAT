@@ -341,9 +341,11 @@ public class ClientHandler implements Runnable {
             int puertoRecepcionReceptor = puertoBase;
 
             System.out.println("🎯 CONFIGURACIÓN BIDIRECCIONAL CORREGIDA:");
-            System.out.println("   " + clientName + " ENVÍA → " + puertoEnvioLlamante + " | RECIBE ← " + puertoRecepcionLlamante);
-            System.out.println("   " + destinatario + " ENVÍA → " + puertoEnvioReceptor + " | RECIBE ← " + puertoRecepcionReceptor);
-
+            System.out.println("   " + clientName + " (" + ipLlamante + ")");
+            System.out.println("     ENVÍA → " + puertoEnvioLlamante + " | RECIBE ← " + puertoRecepcionLlamante);
+            System.out.println("   " + destinatario + " (" + ipReceptor + ")");
+            System.out.println("     ENVÍA → " + puertoEnvioReceptor + " | RECIBE ← " + puertoRecepcionReceptor);
+            
             // ✅ CORRECCIÓN: Informar al LLAMANTE primero
             out.println("IP_DESTINO:" + ipReceptor);
             out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);
