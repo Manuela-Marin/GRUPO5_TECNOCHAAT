@@ -347,7 +347,7 @@ private static void ejecutarEnvioAudio() {
                 System.out.println("🔇 Micrófono cerrado");
             }
         } catch (Exception e) {
-            // Ignorar errores de cierre si el micrófono es null
+            // ✅✅✅ CORRECCIÓN: Solo mostrar error si micrófono no es null
             if (microfono != null) {
                 System.err.println("⚠️  Error cerrando micrófono: " + e.getMessage());
             }

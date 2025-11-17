@@ -300,7 +300,7 @@ public class AudioCallReceiver {
                 System.out.println("🔇 Altavoz cerrado");
             }
         } catch (Exception e) {
-            // Ignorar errores de cierre si el altavoz es null
+            // ✅✅✅ CORRECCIÓN: Solo mostrar error si altavoz no es null
             if (altavoz != null) {
                 System.err.println("⚠️  Error cerrando altavoz: " + e.getMessage());
             }

@@ -224,62 +224,50 @@ public class ClientHandler implements Runnable {
 
         try {
             int puertoBase = 20000 + new Random().nextInt(1000);
-
-            System.out.println("INICIANDO LLAMADA GRUPAL:");
-            System.out.println("   Creador: " + clientName);
-            System.out.println("   Grupo: " + grupoDestino);
-            System.out.println("   Miembros totales: " + miembros.size());
-
-            // ✅ CORRECCIÓN: Mismos puertos para todos en grupal
             int puertoEnvio = puertoBase;
             int puertoRecepcion = puertoBase + 1000;
             String idLlamadaGrupal = grupoDestino + "_" + System.currentTimeMillis();
 
-            // Notificar a TODOS los miembros del grupo (incluyendo al creador)
-            int miembrosNotificados = 0;
-            List<String> ipsMiembros = new ArrayList<>();
+            System.out.println("INICIANDO LLAMADA GRUPAL:");
+            System.out.println("   Creador: " + clientName);
+            System.out.println("   Grupo: " + grupoDestino);
+            System.out.println("   Puertos: Envio=" + puertoEnvio + ", Recepcion=" + puertoRecepcion);
 
+            // ✅✅✅ CORRECCIÓN: Configurar al creador con IPs REALES
+            this.out.println("CONFIG_LLAMADA_GRUPAL");
+            this.out.println("IP_CREADOR:" + this.clientSocket.getInetAddress().getHostAddress());
+            this.out.println("PUERTO_RECEPCION:" + puertoRecepcion);
+            this.out.println("PUERTO_ENVIO:" + puertoEnvio);
+            this.out.println("MIEMBROS_INVITADOS:" + (miembros.size() - 1));
+            this.out.println("ID_LLAMADA:" + idLlamadaGrupal);
+            
+            // ✅✅✅ CORRECCIÓN: Agregar IPs REALES de otros miembros
+            for (ClientHandler otro : miembros) {
+                if (!otro.clientName.equals(this.clientName)) {
+                    this.out.println("IP_MIEMBRO:" + otro.clientSocket.getInetAddress().getHostAddress());
+                }
+            }
+            this.out.println("END_IP_LIST");
+
+            // Notificar a otros miembros con IPs REALES
             for (ClientHandler miembro : miembros) {
-                try {
-                    String ipMiembro = miembro.clientSocket.getInetAddress().getHostAddress();
-
-                    // Si es el creador, configurar directamente
-                    if (miembro.clientName.equals(this.clientName)) {
-                        miembro.out.println("CONFIG_LLAMADA_GRUPAL");
-                        miembro.out.println("IP_CREADOR:" + this.clientSocket.getInetAddress().getHostAddress());
-                        miembro.out.println("PUERTO_RECEPCION:" + puertoRecepcion);
-                        miembro.out.println("PUERTO_ENVIO:" + puertoEnvio);
-                        miembro.out.println("MIEMBROS_INVITADOS:" + (miembros.size() - 1));
-                        miembro.out.println("ID_LLAMADA:" + idLlamadaGrupal);
-                        
-                        // Agregar IPs de otros miembros
-                        for (ClientHandler otro : miembros) {
-                            if (!otro.clientName.equals(this.clientName)) {
-                                miembro.out.println("IP_MIEMBRO:" + otro.clientSocket.getInetAddress().getHostAddress());
-                            }
-                        }
-                        miembro.out.println("END_IP_LIST");
-                    } else {
-                        // Para otros miembros, notificar llamada entrante
+                if (!miembro.clientName.equals(this.clientName)) {
+                    try {
                         miembro.out.println("LLAMADA_GRUPAL_INCOMING");
                         miembro.dataOut.writeUTF(this.clientName);
                         miembro.dataOut.writeUTF(grupoDestino);
-                        miembro.dataOut.writeUTF(this.clientSocket.getInetAddress().getHostAddress());
+                        miembro.dataOut.writeUTF(this.clientSocket.getInetAddress().getHostAddress()); // ✅ IP REAL
                         miembro.dataOut.writeInt(puertoRecepcion);
                         miembro.dataOut.writeInt(puertoEnvio);
                         miembro.dataOut.writeUTF(idLlamadaGrupal);
                         miembro.dataOut.flush();
-                        miembrosNotificados++;
+                    } catch (Exception e) {
+                        System.err.println("Error notificando a " + miembro.clientName + ": " + e.getMessage());
                     }
-
-                    ipsMiembros.add(ipMiembro);
-
-                } catch (Exception e) {
-                    System.err.println("Error notificando a " + miembro.clientName + ": " + e.getMessage());
                 }
             }
 
-            System.out.println("Llamada grupal configurada. Miembros notificados: " + (miembrosNotificados + 1));
+            System.out.println("Llamada grupal configurada para " + miembros.size() + " miembros");
             out.println("Llamada grupal iniciada al grupo '" + grupoDestino + "'. Esperando respuestas...");
 
         } catch (Exception e) {
@@ -326,38 +314,38 @@ public class ClientHandler implements Runnable {
         ClientHandler receptor = users.get(destinatario);
 
         try {
+            // ✅✅✅ CORRECCIÓN CRÍTICA: Usar la IP REAL del socket, no localhost
             String ipReceptor = receptor.clientSocket.getInetAddress().getHostAddress();
             String ipLlamante = this.clientSocket.getInetAddress().getHostAddress();
 
-            // ✅ CORRECCIÓN: PUERTOS ÚNICOS Y BIEN SEPARADOS
+            System.out.println("🔍 IPs detectadas:");
+            System.out.println("   Llamante (" + clientName + "): " + ipLlamante);
+            System.out.println("   Receptor (" + destinatario + "): " + ipReceptor);
+
+            // Usar puertos bien separados
             int puertoBase = 30000 + new Random().nextInt(5000);
-            
-            // Llamante: ENVÍA por puertoBase, RECIBE por puertoBase+1
             int puertoEnvioLlamante = puertoBase;
             int puertoRecepcionLlamante = puertoBase + 1;
-            
-            // Receptor: ENVÍA por puertoBase+1, RECIBE por puertoBase  
             int puertoEnvioReceptor = puertoBase + 1;
             int puertoRecepcionReceptor = puertoBase;
 
-            System.out.println("🎯 CONFIGURACIÓN BIDIRECCIONAL CORREGIDA:");
+            System.out.println("🎯 CONFIGURACIÓN BIDIRECCIONAL:");
             System.out.println("   " + clientName + " (" + ipLlamante + ")");
             System.out.println("     ENVÍA → " + puertoEnvioLlamante + " | RECIBE ← " + puertoRecepcionLlamante);
             System.out.println("   " + destinatario + " (" + ipReceptor + ")");
             System.out.println("     ENVÍA → " + puertoEnvioReceptor + " | RECIBE ← " + puertoRecepcionReceptor);
-            
-            // ✅ CORRECCIÓN: Informar al LLAMANTE primero
+
+            // Informar al LLAMANTE
             out.println("IP_DESTINO:" + ipReceptor);
             out.println("PUERTO_ENVIO:" + puertoEnvioLlamante);
             out.println("PUERTO_RECEPCION:" + puertoRecepcionLlamante);
 
-            // Esperar un momento antes de notificar al receptor
             Thread.sleep(100);
 
-            // ✅ CORRECCIÓN: Informar al RECEPTOR  
+            // Informar al RECEPTOR  
             receptor.out.println("LLAMADA_INCOMING");
             receptor.dataOut.writeUTF(this.clientName);
-            receptor.dataOut.writeUTF(ipLlamante);
+            receptor.dataOut.writeUTF(ipLlamante); // ✅ IP REAL del llamante
             receptor.dataOut.writeInt(puertoRecepcionReceptor);
             receptor.dataOut.writeInt(puertoEnvioReceptor);
             receptor.dataOut.flush();
